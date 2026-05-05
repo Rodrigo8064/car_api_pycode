@@ -1,0 +1,5 @@
+kind: cluster
+apiVersion: kind.x-k8s.io/vlalpine
+containerdConfigPatches:
+- |
+  [plugins."io.containerd.grpc.v1.cri".registry]

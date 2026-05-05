@@ -32,5 +32,3 @@ app.include_router(
 @app.get('/health_check', status_code=status.HTTP_200_OK)
 def health_check():
     return {'status': 'ok'}
-
-# DATABASE_URL2='postgresql+psycopg://postgres:postgres@db:5432/postgres'
