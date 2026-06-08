@@ -1,17 +1,15 @@
-version: '3.8'
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: api-inventory
     depends_on:
       migrations:
         condition: service_completed_successfully
     env_file:
       - .env
-    networks:
-      - portfolio-net
+    ports:
+      - "8002:8000"
 
   migrations:
     build:
@@ -23,8 +21,6 @@ services:
     depends_on:
       db:
         condition: service_started
-    networks:
-      - portfolio-net
 
   db:
     image: postgres:17.6-trixie
@@ -34,20 +30,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - data:/var/lib/postgresql/data
-    networks:
-      - portfolio-net
 
   mkdocs:
     build:
       context: .
       dockerfile: Dockerfile.mkdocs
     ports:
-      - "8001:80"
+      - "8004:80"
 
 volumes:
   data:
-
-networks:
-  portfolio-net:
-    name: portfolio-net
-    external: true
