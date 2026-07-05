@@ -1,6 +1,7 @@
-def test_create_user_success(client):
+def test_create_user_success(client, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': 'newuser',
             'email': 'newuser@example.com',
@@ -12,14 +13,15 @@ def test_create_user_success(client):
     user_data = response.json()
     assert user_data['username'] == 'newuser'
     assert user_data['email'] == 'newuser@example.com'
-    assert user_data['id'] == 1
+    assert user_data['id'] == 2
     assert 'created_at' in user_data
     assert 'updated_at' in user_data
 
 
-def test_create_user_username_too_short(client):
+def test_create_user_username_too_short(client, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': 'ab',
             'email': 'test@example.com',
@@ -32,9 +34,10 @@ def test_create_user_username_too_short(client):
     assert 'Username deve ter pelo menos 3 caracteres' in str(error_data)
 
 
-def test_create_user_password_too_short(client):
+def test_create_user_password_too_short(client, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': 'testuser',
             'email': 'test@example.com',
@@ -47,9 +50,10 @@ def test_create_user_password_too_short(client):
     assert 'Senha deve ter pelo menos 6 caracteres' in str(error_data)
 
 
-def test_create_user_invalid_email(client):
+def test_create_user_invalid_email(client, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': 'testuser',
             'email': 'invalid-email',
@@ -60,9 +64,10 @@ def test_create_user_invalid_email(client):
     assert response.status_code == 422
 
 
-def test_create_user_duplicate_username(client, user):
+def test_create_user_duplicate_username(client, user, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': user.username,
             'email': 'different@example.com',
@@ -75,9 +80,10 @@ def test_create_user_duplicate_username(client, user):
     assert error_data['detail'] == 'Username já está em uso'
 
 
-def test_create_user_duplicate_email(client, user):
+def test_create_user_duplicate_email(client, user, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': 'differentuser',
             'email': user.email,
@@ -90,18 +96,8 @@ def test_create_user_duplicate_email(client, user):
     assert error_data['detail'] == 'Email já está em uso'
 
 
-def test_list_users_empty(client):
-    response = client.get('/api/v1/users/')
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data['users'] == []
-    assert data['offset'] == 0
-    assert data['limit'] == 100
-
-
-def test_list_users_with_users(client, user, second_user):
-    response = client.get('/api/v1/users/')
+def test_list_users_with_users(client, user, second_user, auth_headers):
+    response = client.get('/api/v1/users/', headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -114,8 +110,10 @@ def test_list_users_with_users(client, user, second_user):
     assert second_user.username in usernames
 
 
-def test_list_users_with_pagination(client, user, second_user):
-    response = client.get('/api/v1/users/?offset=1&limit=1')
+def test_list_users_with_pagination(client, user, second_user, auth_headers):
+    response = client.get(
+        '/api/v1/users/?offset=1&limit=1', headers=auth_headers
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -124,8 +122,12 @@ def test_list_users_with_pagination(client, user, second_user):
     assert data['limit'] == 1
 
 
-def test_list_users_search_by_username(client, user, second_user):
-    response = client.get(f'/api/v1/users/?search={user.username[:4]}')
+def test_list_users_search_by_username(
+    client, user, second_user, auth_headers
+):
+    response = client.get(
+        f'/api/v1/users/?search={user.username[:4]}', headers=auth_headers
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -133,8 +135,10 @@ def test_list_users_search_by_username(client, user, second_user):
     assert data['users'][0]['username'] == user.username
 
 
-def test_list_users_search_by_email(client, user, second_user):
-    response = client.get(f'/api/v1/users/?search={user.email[:4]}')
+def test_list_users_search_by_email(client, user, second_user, auth_headers):
+    response = client.get(
+        f'/api/v1/users/?search={user.email[:4]}', headers=auth_headers
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -142,34 +146,36 @@ def test_list_users_search_by_email(client, user, second_user):
     assert data['users'][0]['email'] == user.email
 
 
-def test_list_users_search_no_results(client, user):
-    response = client.get('/api/v1/users/?search=nonexistent')
+def test_list_users_search_no_results(client, user, auth_headers):
+    response = client.get(
+        '/api/v1/users/?search=nonexistent', headers=auth_headers
+    )
 
     assert response.status_code == 200
     data = response.json()
     assert len(data['users']) == 0
 
 
-def test_list_users_invalid_offset(client):
-    response = client.get('/api/v1/users/?offset=-1')
+def test_list_users_invalid_offset(client, auth_headers):
+    response = client.get('/api/v1/users/?offset=-1', headers=auth_headers)
 
     assert response.status_code == 422
 
 
-def test_list_users_invalid_limit(client):
-    response = client.get('/api/v1/users/?limit=0')
+def test_list_users_invalid_limit(client, auth_headers):
+    response = client.get('/api/v1/users/?limit=0', headers=auth_headers)
 
     assert response.status_code == 422
 
 
-def test_list_users_limit_exceeds_maximum(client):
-    response = client.get('/api/v1/users/?limit=101')
+def test_list_users_limit_exceeds_maximum(client, auth_headers):
+    response = client.get('/api/v1/users/?limit=101', headers=auth_headers)
 
     assert response.status_code == 422
 
 
-def test_get_user_success(client, user):
-    response = client.get(f'/api/v1/users/{user.id}')
+def test_get_user_success(client, user, auth_headers):
+    response = client.get(f'/api/v1/users/{user.id}', headers=auth_headers)
 
     assert response.status_code == 200
     user_data = response.json()
@@ -180,8 +186,8 @@ def test_get_user_success(client, user):
     assert 'updated_at' in user_data
 
 
-def test_get_user_not_found(client):
-    response = client.get('/api/v1/users/999')
+def test_get_user_not_found(client, auth_headers):
+    response = client.get('/api/v1/users/999', headers=auth_headers)
 
     assert response.status_code == 404
     error_data = response.json()
@@ -360,15 +366,17 @@ def test_update_user_empty_payload(client, user, auth_headers):
     assert user_data['email'] == user.email
 
 
-def test_delete_user_success(client, user, auth_headers):
+def test_delete_user_success(client, second_user, auth_headers):
     response = client.delete(
-        f'/api/v1/users/{user.id}',
+        f'/api/v1/users/{second_user.id}',
         headers=auth_headers,
     )
 
     assert response.status_code == 204
 
-    get_response = client.get(f'/api/v1/users/{user.id}')
+    get_response = client.get(
+        f'/api/v1/users/{second_user.id}', headers=auth_headers
+    )
     assert get_response.status_code == 404
 
 
@@ -389,9 +397,10 @@ def test_delete_user_not_found(client, auth_headers):
     assert error_data['detail'] == 'Usuário não encontrado'
 
 
-def test_create_user_missing_fields(client):
+def test_create_user_missing_fields(client, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': 'test',
         },
@@ -400,9 +409,10 @@ def test_create_user_missing_fields(client):
     assert response.status_code == 422
 
 
-def test_create_user_empty_fields(client):
+def test_create_user_empty_fields(client, auth_headers):
     response = client.post(
         '/api/v1/users/',
+        headers=auth_headers,
         json={
             'username': '',
             'email': '',
@@ -413,8 +423,10 @@ def test_create_user_empty_fields(client):
     assert response.status_code == 422
 
 
-def test_list_users_case_insensitive_search(client, user):
-    response = client.get(f'/api/v1/users/?search={user.username.upper()}')
+def test_list_users_case_insensitive_search(client, user, auth_headers):
+    response = client.get(
+        f'/api/v1/users/?search={user.username.upper()}', headers=auth_headers
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -422,9 +434,11 @@ def test_list_users_case_insensitive_search(client, user):
     assert data['users'][0]['username'] == user.username
 
 
-def test_list_users_partial_email_search(client, user):
+def test_list_users_partial_email_search(client, user, auth_headers):
     email_part = user.email.split('@')[0]
-    response = client.get(f'/api/v1/users/?search={email_part}')
+    response = client.get(
+        f'/api/v1/users/?search={email_part}', headers=auth_headers
+    )
 
     assert response.status_code == 200
     data = response.json()
