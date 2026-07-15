@@ -4,6 +4,7 @@ import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from testcontainers.postgres import PostgresContainer
 
 from car_api.app import app
 from car_api.core.database import get_session
@@ -13,12 +14,17 @@ from car_api.models.cars import Brand, Car, FuelType, TransmissionType
 from car_api.models.users import User
 
 
-@pytest_asyncio.fixture
-async def session():
-    engine = create_async_engine(
-        url='sqlite+aiosqlite:///:memory:',
-    )
+@pytest.fixture(scope='session')
+def engine():
+    with PostgresContainer('postgres:17', driver='psycopg') as postgres:
+        _engine = create_async_engine(
+            postgres.get_connection_url(),
+        )
+        yield _engine
 
+
+@pytest_asyncio.fixture
+async def session(engine):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
