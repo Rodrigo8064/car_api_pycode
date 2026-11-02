@@ -14,7 +14,7 @@ echo "  Iniciando Gunicorn..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 exec poetry run gunicorn car_api.app:app \
-    --bind 0.0.0.0:8002 \
+    --bind 0.0.0.0:8000 \
     -k uvicorn.workers.UvicornWorker \
     --workers 1 \
     --access-logfile - \

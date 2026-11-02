@@ -27,5 +27,5 @@ RUN poetry install \
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 RUN chmod +x entrypoint.sh
-EXPOSE 8002
+EXPOSE 8000
 CMD ["./entrypoint.sh"]
